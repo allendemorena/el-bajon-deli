@@ -63,6 +63,17 @@ document.querySelector("#form").onsubmit = async (e) => {
     return;
   }
 
+  const localidad = document.querySelector("#city").value;
+
+const costoEnvio = {
+  "Resistencia": 2000,
+  "Barranqueras": 2000,
+  "Puerto Vilelas": 3000,
+  "Fontana": 3000
+}[localidad] ?? 0;
+
+costo_envio: costoEnvio,
+total: subtotal + costoEnvio,
   const pedido = {
     cliente_nombre: document.querySelector("#name").value.trim(),
     cliente_telefono: document.querySelector("#phone").value.trim(),
