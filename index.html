@@ -102,7 +102,8 @@ document.querySelector("#form").onsubmit = async (e) => {
 
   } catch (error) {
     console.error("Error al guardar:", error);
-    alert("No se pudo registrar el pedido. Intentá nuevamente.");
+    alert("Error de Supabase: " + error.message + " | Código: " + error.code);
+console.error("Detalle completo:", error);
   }
 };
 document.querySelector("#finish").onclick=()=>{modal.classList.remove("show");document.querySelector("#formwrap").style.display="block";document.querySelector("#confirmation").classList.remove("show");document.querySelector("#form").reset();cart={};renderCart();document.querySelector("#search").value="";selected="Todo";filters();render()};filters();render();renderCart();
