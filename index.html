@@ -58,6 +58,7 @@ document.querySelector("#form").onsubmit = async (e) => {
   e.preventDefault();
 
   const entries = Object.entries(cart);
+
   if (!entries.length) {
     alert("Tu carrito está vacío.");
     return;
@@ -65,19 +66,20 @@ document.querySelector("#form").onsubmit = async (e) => {
 
   const localidad = document.querySelector("#city").value;
 
-const costoEnvio = {
-  "Resistencia": 2000,
-  "Barranqueras": 2000,
-  "Puerto Vilelas": 3000,
-  "Fontana": 3000
-}[localidad] ?? 0;
+  const costoEnvio = {
+    "Resistencia": 2000,
+    "Barranqueras": 2000,
+    "Puerto Vilelas": 3000,
+    "Fontana": 3000
+  }[localidad] ?? 0;
 
-costo_envio: costoEnvio,
-total: subtotal + costoEnvio,
+  const subtotal = entries.reduce((s, [id, q]) =>
+    s + products.find(p => p.id === Number(id)).price * q, 0);
+
   const pedido = {
     cliente_nombre: document.querySelector("#name").value.trim(),
     cliente_telefono: document.querySelector("#phone").value.trim(),
-    localidad: document.querySelector("#city").value,
+    localidad: localidad,
     direccion: document.querySelector("#address").value.trim(),
     forma_pago: document.querySelector("#payment").value,
     indicaciones: document.querySelector("#notes").value.trim(),
@@ -90,8 +92,8 @@ total: subtotal + costoEnvio,
         cantidad: Number(cantidad)
       };
     }),
-    total: entries.reduce((s, [id, q]) =>
-      s + products.find(p => p.id === Number(id)).price * q, 0),
+    costo_envio: costoEnvio,
+    total: subtotal + costoEnvio,
     estado: "pendiente"
   };
 
@@ -106,7 +108,7 @@ total: subtotal + costoEnvio,
       `¡Gracias, ${pedido.cliente_nombre}! Tu pedido quedó registrado para prueba.`;
 
     document.querySelector("#summary").textContent =
-      `Total: ${money(pedido.total)} · Estado: pendiente`;
+      `Subtotal: ${money(subtotal)} · Envío: ${money(costoEnvio)} · Total: ${money(pedido.total)} · Estado: pendiente`;
 
     document.querySelector("#formwrap").style.display = "none";
     document.querySelector("#confirmation").classList.add("show");
@@ -114,7 +116,7 @@ total: subtotal + costoEnvio,
   } catch (error) {
     console.error("Error al guardar:", error);
     alert("Error de Supabase: " + error.message + " | Código: " + error.code);
-console.error("Detalle completo:", error);
+    console.error("Detalle completo:", error);
   }
 };
 document.querySelector("#finish").onclick=()=>{modal.classList.remove("show");document.querySelector("#formwrap").style.display="block";document.querySelector("#confirmation").classList.remove("show");document.querySelector("#form").reset();cart={};renderCart();document.querySelector("#search").value="";selected="Todo";filters();render()};filters();render();renderCart();
