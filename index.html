@@ -38,7 +38,14 @@ header, .topbar, .product-card, .cart, .panel {
 <div class="modal" id="modal"><div class="box"><div id="formwrap"><div class="drawhead"><h2>Datos de entrega</h2><button class="close" id="closemodal">×</button></div><p class="tiny">Completá para probar el flujo de compra. No se enviará a ningún comercio.</p><form id="form"><div class="field"><label>Nombre y apellido</label><input id="name" required autocomplete="name" placeholder="Tu nombre"></div><div class="field"><label>Teléfono</label><input id="phone" required type="tel" autocomplete="tel" placeholder="Tu número"></div><div class="two"><div class="field"><label>Localidad</label><select id="city" required><option value="">Elegí tu zona</option><option>Resistencia</option><option>Barranqueras</option><option>Puerto Vilelas</option><option>Fontana</option></select></div><div class="field"><label>Forma de pago (demo)</label><select id="payment" required><option value="">Elegí</option><option>Efectivo</option><option>Transferencia</option><option>Pago online (no activo)</option></select></div></div><div class="field"><label>Dirección</label><input id="address" required autocomplete="street-address" placeholder="Calle, número y barrio"></div><div class="field"><label>Indicaciones (opcional)</label><textarea id="notes" placeholder="Referencia para encontrar tu casa"></textarea></div><div class="notice">No ingreses datos de tarjetas. Esta demo no procesa pagos ni guarda tus datos.</div><button class="checkout">Ver resumen de demostración</button></form></div><div id="confirmation" class="confirmation"><div style="font-size:45px">🧾</div><h2>¡Pedido registrado para prueba!</h2><p id="confirmtext" class="tiny"></p><div id="summary" class="notice"></div><button class="checkout" id="finish">Volver a la tienda</button><p class="tiny">Pedido registrado para prueba. No confirma una compra real ni habilita una entrega.</p></div></div></div><div class="toast" id="toast">Agregado</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-const products=[
+const SUPABASE_URL = "https://hwaxsksynhfffchmdxeg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_NmzFzSajtat2a88Da5p5uQ_PdoxICDR";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+    const products=[
 [1,"Papas clásicas","Snacks y papas",1800,"🍟","Papas crocantes para picar","Clásico"],[2,"Nachos con queso","Snacks y papas",2400,"🌮","Algo salado para compartir",""],[3,"Palitos salados","Snacks y papas",1300,"🥨","El snack de siempre",""],[4,"Chocolate con leche","Golosinas",1600,"🍫","Un toque dulce para la noche","Favorito"],[5,"Gomitas frutales","Golosinas",1200,"🍬","Dulces y coloridas",""],[6,"Galletitas dulces","Golosinas",1500,"🍪","Para acompañar algo rico",""],[7,"Gaseosa cola 1.5 L","Gaseosas y jugos",2800,"🥤","Bien fría, ideal para compartir",""],[8,"Jugo de naranja","Gaseosas y jugos",1900,"🧃","Una opción refrescante",""],[9,"Bebida energética","Energizantes",2600,"⚡","Lata individual","Popular"],[10,"Energizante x2","Energizantes",4900,"⚡","Dos latas para la noche","Combo"],[11,"Combo peli","Combos para el bajón",5900,"🍿","Papas, chocolate y gaseosa","Ahorro"],[12,"Combo noche larga","Combos para el bajón",8900,"🌙","Snacks dulces y salados + bebida","Popular"],[13,"Combo juntada","Combos para el bajón",11900,"🎉","Para compartir entre amigos","Compartir"],[14,"Bebida alcohólica (ejemplo)","Bebidas alcohólicas",6500,"🍾","Ejemplo +18; venta sujeta a ley y verificación de edad","+18"]
 ].map(a=>({id:a[0],name:a[1],cat:a[2],price:a[3],emoji:a[4],desc:a[5],tag:a[6]}));
 const cats=["Todo","Snacks y papas","Golosinas","Gaseosas y jugos","Energizantes","Bebidas alcohólicas","Combos para el bajón"];let selected="Todo",cart={};const money=n=>n.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
@@ -47,6 +54,56 @@ function render(){let q=document.querySelector("#search").value.toLowerCase().tr
 function renderCart(){let es=Object.entries(cart),n=es.reduce((s,[,q])=>s+q,0),sub=es.reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);document.querySelector("#count").textContent=n;document.querySelector("#subtotal").textContent=money(sub);document.querySelector("#total").textContent=money(sub);document.querySelector("#items").innerHTML=es.length?es.map(([id,q])=>{let p=products.find(p=>p.id==id);return `<div class="item"><span style="font-size:29px">${p.emoji}</span><div><h4>${p.name}</h4><small>${money(p.price)} c/u</small><div class="qty"><button data-id="${id}" data-d="-1">−</button><b>${q}</b><button data-id="${id}" data-d="1">+</button></div></div><b>${money(p.price*q)}</b></div>`}).join(""):`<div class="empty">Tu carrito está vacío. 🍟</div>`;document.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{let id=b.dataset.id;cart[id]=(cart[id]||0)+Number(b.dataset.d);if(cart[id]<=0)delete cart[id];renderCart()});document.querySelector("#go").disabled=!n;document.querySelector("#go").style.opacity=n?1:.5}
 function toast(){let t=document.querySelector("#toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400)}
 const overlay=document.querySelector("#overlay"),modal=document.querySelector("#modal");document.querySelector("#open").onclick=()=>overlay.classList.add("show");document.querySelector("#close").onclick=()=>overlay.classList.remove("show");overlay.onclick=e=>{if(e.target===overlay)overlay.classList.remove("show")};document.querySelector("#go").onclick=()=>{if(Object.keys(cart).length){overlay.classList.remove("show");modal.classList.add("show")}};document.querySelector("#closemodal").onclick=()=>modal.classList.remove("show");modal.onclick=e=>{if(e.target===modal)modal.classList.remove("show")};document.querySelector("#search").oninput=render;
-document.querySelector("#form").onsubmit=e=>{e.preventDefault();let entries=Object.entries(cart),sub=entries.reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);document.querySelector("#confirmtext").textContent=`Gracias, ${document.querySelector("#name").value}. Vista previa para ${document.querySelector("#city").value}; no se enviará ni cobrará.`;document.querySelector("#summary").innerHTML=entries.map(([id,q])=>{let p=products.find(p=>p.id==id);return `${q} × ${p.name}: ${money(p.price*q)}`}).join("<br>")+`<hr>Total de productos: <b>${money(sub)}</b><br>Dirección: ${document.querySelector("#address").value}<br>Pago elegido: ${document.querySelector("#payment").value}<br>Envío: a definir`;document.querySelector("#formwrap").style.display="none";document.querySelector("#confirmation").classList.add("show")};
+document.querySelector("#form").onsubmit = async (e) => {
+  e.preventDefault();
+
+  const entries = Object.entries(cart);
+  if (!entries.length) {
+    alert("Tu carrito está vacío.");
+    return;
+  }
+
+  const pedido = {
+    cliente_nombre: document.querySelector("#name").value.trim(),
+    cliente_telefono: document.querySelector("#phone").value.trim(),
+    localidad: document.querySelector("#city").value,
+    direccion: document.querySelector("#address").value.trim(),
+    forma_pago: document.querySelector("#payment").value,
+    indicaciones: document.querySelector("#notes").value.trim(),
+    productos: entries.map(([id, cantidad]) => {
+      const p = products.find(p => p.id === Number(id));
+      return {
+        id: Number(id),
+        nombre: p.name,
+        precio: p.price,
+        cantidad: Number(cantidad)
+      };
+    }),
+    total: entries.reduce((s, [id, q]) =>
+      s + products.find(p => p.id === Number(id)).price * q, 0),
+    estado: "pendiente"
+  };
+
+  try {
+    const { error } = await supabaseClient
+      .from("pedidos")
+      .insert(pedido);
+
+    if (error) throw error;
+
+    document.querySelector("#confirmtext").textContent =
+      `¡Gracias, ${pedido.cliente_nombre}! Tu pedido quedó registrado para prueba.`;
+
+    document.querySelector("#summary").textContent =
+      `Total: ${money(pedido.total)} · Estado: pendiente`;
+
+    document.querySelector("#formwrap").style.display = "none";
+    document.querySelector("#confirmation").classList.add("show");
+
+  } catch (error) {
+    console.error("Error al guardar:", error);
+    alert("No se pudo registrar el pedido. Intentá nuevamente.");
+  }
+};
 document.querySelector("#finish").onclick=()=>{modal.classList.remove("show");document.querySelector("#formwrap").style.display="block";document.querySelector("#confirmation").classList.remove("show");document.querySelector("#form").reset();cart={};renderCart();document.querySelector("#search").value="";selected="Todo";filters();render()};filters();render();renderCart();
 </script></body></html>
