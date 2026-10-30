@@ -24,34 +24,307 @@ button,input,select{font:inherit}button{cursor:pointer;border:1px solid #3a3a3a;
 <section id="orders" class="orders" aria-live="polite"></section>
 <div class="note"><b style="color:#ff5555">Importante:</b> esta pantalla es una maqueta funcional con pedidos de ejemplo. Los cambios de estado se guardan en este navegador, pero todavía no recibe pedidos reales de la tienda ni los comparte entre dispositivos. Para eso hay que conectar una base de datos y proteger el acceso al panel con usuario y contraseña.</div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const initial=[
-{id:1042,name:"Camila R.",time:"Hoy · 22:14",phone:"3624 555-010",address:"Resistencia · Av. Sarmiento 850",payment:"Transferencia",status:"Pendiente",items:[["2 × Monster",5200],["Papas clásicas",1800],["Combo dulce",3400]],delivery:1200},
-{id:1041,name:"Mateo G.",time:"Hoy · 21:48",phone:"3624 555-014",address:"Barranqueras · zona centro",payment:"Efectivo",status:"En preparación",items:[["Fernet 750 ml",9800],["Coca-Cola 1.5 L",2800]],delivery:1800},
-{id:1040,name:"Sofi M.",time:"Hoy · 21:20",phone:"3624 555-021",address:"Fontana · zona plaza",payment:"Pago online (demo)",status:"Entregado",items:[["2 × Speed",2600],["Papas onduladas",1800],["Gomitas",1600]],delivery:1600}
-];
-let orders=initial.map(o=>({...o,items:o.items.map(x=>[...x])}));
-const money=n=>"$ "+n.toLocaleString("es-AR");
-const total=o=>o.items.reduce((s,i)=>s+i[1],0)+o.delivery;
-const cls=s=>({"Pendiente":"pending","En preparación":"prep","En camino":"delivery","Entregado":"done","Cancelado":"cancel"}[s]||"pending");
-function render(){
- const q=document.getElementById("search").value.toLowerCase(), f=document.getElementById("filter").value;
- const visible=orders.filter(o=>(f==="all"||o.status===f)&&(`${o.id} ${o.name} ${o.address} ${o.phone}`.toLowerCase().includes(q)));
- document.getElementById("count").textContent=orders.filter(o=>o.status!=="Cancelado").length;
- document.getElementById("pendingCount").textContent=orders.filter(o=>o.status==="Pendiente").length;
- document.getElementById("prepCount").textContent=orders.filter(o=>o.status==="En preparación").length;
- document.getElementById("sales").textContent=money(orders.filter(o=>o.status!=="Cancelado").reduce((s,o)=>s+total(o),0));
- const root=document.getElementById("orders");
- if(!visible.length){root.innerHTML='<div class="empty">No hay pedidos que coincidan con la búsqueda.</div>';return}
- root.innerHTML=visible.map(o=>`<article class="order">
- <div class="orderhead"><div><h3>Pedido #${o.id}</h3><div class="muted">${o.time} · ${o.name}</div></div><span class="status ${cls(o.status)}">${o.status}</span></div>
- <div class="items">${o.items.map(i=>`<div class="itemrow"><span>${i[0]}</span><span>${money(i[1])}</span></div>`).join("")}<div class="itemrow muted"><span>Envío</span><span>${money(o.delivery)}</span></div></div>
- <div class="totalrow"><span>Total</span><span class="total">${money(total(o))}</span></div>
- <div class="details"><div>☎ ${o.phone}</div><div>⌖ ${o.address}</div><div>Pago: ${o.payment}</div></div>
- <div class="actions"><select aria-label="Cambiar estado del pedido ${o.id}" onchange="changeStatus(${o.id},this.value)">${["Pendiente","En preparación","En camino","Entregado","Cancelado"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select><button onclick="copySummary(${o.id})">Copiar resumen</button></div>
- </article>`).join("");
+const SUPABASE_URL = "https://hwaxsksynhfffchmdxeg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_NmzFzSajtat2a88Da5p5uQ_PdoxICDR";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+let orders = [];
+
+const money = n => "$ " + Number(n || 0).toLocaleString("es-AR");
+
+const statusLabels = {
+  pendiente: "Pendiente",
+  en_preparacion: "En preparación",
+  en_camino: "En camino",
+  entregado: "Entregado",
+  cancelado: "Cancelado"
+};
+
+const statusValues = {
+  "Pendiente": "pendiente",
+  "En preparación": "en_preparacion",
+  "En camino": "en_camino",
+  "Entregado": "entregado",
+  "Cancelado": "cancelado"
+};
+
+const cls = s => ({
+  "Pendiente": "pending",
+  "En preparación": "prep",
+  "En camino": "delivery",
+  "Entregado": "done",
+  "Cancelado": "cancel"
+}[s] || "pending");
+
+function formatTime(date) {
+  return new Date(date).toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
-function changeStatus(id,status){orders=orders.map(o=>o.id===id?{...o,status}:o);render()}
-function copySummary(id){const o=orders.find(x=>x.id===id);const msg=`EL BAJÓN DELI · Pedido #${o.id}\\nCliente: ${o.name}\\nTeléfono: ${o.phone}\\nEntrega: ${o.address}\\n${o.items.map(i=>i[0]+" — "+money(i[1])).join("\\n")}\\nEnvío: ${money(o.delivery)}\\nTOTAL: ${money(total(o))}\\nPago: ${o.payment}\\nEstado: ${o.status}`;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Resumen copiado.")).catch(()=>prompt("Copiá el resumen:",msg))}else prompt("Copiá el resumen:",msg)}
-document.getElementById("search").addEventListener("input",render);document.getElementById("filter").addEventListener("change",render);document.getElementById("reset").addEventListener("click",()=>{orders=initial.map(o=>({...o,items:o.items.map(x=>[...x])}));document.getElementById("search").value="";document.getElementById("filter").value="all";render()});render();
+
+function convertOrder(o) {
+  const products = Array.isArray(o.productos) ? o.productos : [];
+
+  return {
+    id: o.id,
+    name: o.cliente_nombre || "Sin nombre",
+    time: formatTime(o.created_at),
+    phone: o.cliente_telefono || "Sin teléfono",
+    address: [o.localidad, o.direccion].filter(Boolean).join(" · ") || "Sin dirección",
+    payment: o.forma_pago || "No especificado",
+    status: statusLabels[o.estado] || o.estado || "Pendiente",
+    items: products.map(p => [
+      `${p.cantidad} × ${p.nombre}`,
+      Number(p.precio || 0) * Number(p.cantidad || 0)
+    ]),
+    total: Number(o.total || 0),
+    notes: o.indicaciones || ""
+  };
+}
+
+function showLogin() {
+  const overlay = document.createElement("div");
+  overlay.id = "adminLogin";
+  overlay.style.cssText = `
+    position:fixed; inset:0; z-index:99999;
+    background:#090909; display:grid; place-items:center;
+    padding:20px; font-family:Arial,sans-serif;
+  `;
+
+  overlay.innerHTML = `
+    <form id="loginForm" style="
+      width:100%; max-width:380px; box-sizing:border-box;
+      background:#171717; border:1px solid #333;
+      border-radius:16px; padding:28px; color:white;
+    ">
+      <h2 style="margin-top:0">EL BAJÓN DELI</h2>
+      <p style="color:#aaa">Acceso privado al panel de pedidos</p>
+      <label style="display:block;margin:18px 0 7px">Correo electrónico</label>
+      <input id="adminEmail" type="email" required
+        style="width:100%;box-sizing:border-box;padding:13px;border-radius:8px;border:1px solid #444;background:#222;color:white">
+      <label style="display:block;margin:18px 0 7px">Contraseña</label>
+      <input id="adminPassword" type="password" required
+        style="width:100%;box-sizing:border-box;padding:13px;border-radius:8px;border:1px solid #444;background:#222;color:white">
+      <button type="submit" style="
+        width:100%;margin-top:22px;padding:14px;border:0;
+        border-radius:8px;background:#e32636;color:white;
+        font-weight:bold;cursor:pointer
+      ">Ingresar</button>
+      <p id="loginError" style="color:#ff7777;font-size:13px"></p>
+    </form>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById("loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const email = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value;
+    const errorBox = document.getElementById("loginError");
+
+    errorBox.textContent = "Ingresando...";
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      errorBox.textContent = "No se pudo ingresar. Revisá el correo y la contraseña.";
+      return;
+    }
+
+    overlay.remove();
+    addLogoutButton();
+    await loadOrders();
+  });
+}
+
+function addLogoutButton() {
+  if (document.getElementById("adminLogout")) return;
+
+  const button = document.createElement("button");
+  button.id = "adminLogout";
+  button.textContent = "Cerrar sesión";
+  button.style.cssText = `
+    position:fixed;right:16px;bottom:16px;z-index:1000;
+    padding:12px 16px;background:#292929;color:white;
+    border:1px solid #555;border-radius:8px;cursor:pointer;
+  `;
+
+  button.onclick = async () => {
+    await supabaseClient.auth.signOut();
+    location.reload();
+  };
+
+  document.body.appendChild(button);
+}
+
+async function loadOrders() {
+  const root = document.getElementById("orders");
+  root.innerHTML = '<div class="empty">Cargando pedidos...</div>';
+
+  const { data, error } = await supabaseClient
+    .from("pedidos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    root.innerHTML = '<div class="empty">No se pudieron cargar los pedidos. Revisá los permisos de Supabase.</div>';
+    return;
+  }
+
+  orders = (data || []).map(convertOrder);
+  render();
+}
+
+function render() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const f = document.getElementById("filter").value;
+
+  const visible = orders.filter(o =>
+    (f === "all" || o.status === f) &&
+    (`${o.id} ${o.name} ${o.address} ${o.phone}`.toLowerCase().includes(q))
+  );
+
+  document.getElementById("count").textContent =
+    orders.filter(o => o.status !== "Cancelado").length;
+
+  document.getElementById("pendingCount").textContent =
+    orders.filter(o => o.status === "Pendiente").length;
+
+  document.getElementById("prepCount").textContent =
+    orders.filter(o => o.status === "En preparación").length;
+
+  document.getElementById("sales").textContent = money(
+    orders.filter(o => o.status !== "Cancelado")
+      .reduce((s, o) => s + o.total, 0)
+  );
+
+  const root = document.getElementById("orders");
+
+  if (!visible.length) {
+    root.innerHTML = '<div class="empty">No hay pedidos que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  root.innerHTML = visible.map(o => `
+    <article class="order">
+      <div class="orderhead">
+        <div>
+          <h3>Pedido #${o.id}</h3>
+          <div class="muted">${o.time} · ${o.name}</div>
+        </div>
+        <span class="status ${cls(o.status)}">${o.status}</span>
+      </div>
+
+      <div class="items">
+        ${o.items.map(i => `
+          <div class="itemrow">
+            <span>${i[0]}</span>
+            <span>${money(i[1])}</span>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="totalrow">
+        <span>Total</span>
+        <span class="total">${money(o.total)}</span>
+      </div>
+
+      <div class="details">
+        <div>☎ ${o.phone}</div>
+        <div>⌖ ${o.address}</div>
+        <div>Pago: ${o.payment}</div>
+        ${o.notes ? `<div>Indicaciones: ${o.notes}</div>` : ""}
+      </div>
+
+      <div class="actions">
+        <select aria-label="Cambiar estado del pedido ${o.id}"
+          onchange="changeStatus('${o.id}',this.value)">
+          ${["Pendiente","En preparación","En camino","Entregado","Cancelado"]
+            .map(s => `<option ${s === o.status ? "selected" : ""}>${s}</option>`)
+            .join("")}
+        </select>
+        <button onclick="copySummary('${o.id}')">Copiar resumen</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+async function changeStatus(id, status) {
+  const estado = statusValues[status];
+
+  const { error } = await supabaseClient
+    .from("pedidos")
+    .update({ estado })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("No se pudo actualizar el estado.");
+    await loadOrders();
+    return;
+  }
+
+  const order = orders.find(o => String(o.id) === String(id));
+  if (order) order.status = status;
+
+  render();
+}
+
+function copySummary(id) {
+  const o = orders.find(x => String(x.id) === String(id));
+  if (!o) return;
+
+  const msg = `EL BAJÓN DELI · Pedido #${o.id}
+Cliente: ${o.name}
+Teléfono: ${o.phone}
+Entrega: ${o.address}
+${o.items.map(i => i[0] + " — " + money(i[1])).join("\n")}
+TOTAL: ${money(o.total)}
+Pago: ${o.payment}
+Estado: ${o.status}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg)
+      .then(() => alert("Resumen copiado."))
+      .catch(() => prompt("Copiá el resumen:", msg));
+  } else {
+    prompt("Copiá el resumen:", msg);
+  }
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter").addEventListener("change", render);
+
+const refreshButton = document.getElementById("reset");
+if (refreshButton) {
+  refreshButton.textContent = "Actualizar pedidos";
+  refreshButton.addEventListener("click", loadOrders);
+}
+
+async function startPanel() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    addLogoutButton();
+    await loadOrders();
+  } else {
+    showLogin();
+  }
+}
+
+startPanel();
 </script></body></html>
