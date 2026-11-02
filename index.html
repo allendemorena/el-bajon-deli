@@ -45,12 +45,95 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-    const products=[
-[1,"Papas clásicas","Snacks y papas",1800,"🍟","Papas crocantes para picar","Clásico"],[2,"Nachos con queso","Snacks y papas",2400,"🌮","Algo salado para compartir",""],[3,"Palitos salados","Snacks y papas",1300,"🥨","El snack de siempre",""],[4,"Chocolate con leche","Golosinas",1600,"🍫","Un toque dulce para la noche","Favorito"],[5,"Gomitas frutales","Golosinas",1200,"🍬","Dulces y coloridas",""],[6,"Galletitas dulces","Golosinas",1500,"🍪","Para acompañar algo rico",""],[7,"Gaseosa cola 1.5 L","Gaseosas y jugos",2800,"🥤","Bien fría, ideal para compartir",""],[8,"Jugo de naranja","Gaseosas y jugos",1900,"🧃","Una opción refrescante",""],[9,"Bebida energética","Energizantes",2600,"⚡","Lata individual","Popular"],[10,"Energizante x2","Energizantes",4900,"⚡","Dos latas para la noche","Combo"],[11,"Combo peli","Combos para el bajón",5900,"🍿","Papas, chocolate y gaseosa","Ahorro"],[12,"Combo noche larga","Combos para el bajón",8900,"🌙","Snacks dulces y salados + bebida","Popular"],[13,"Combo juntada","Combos para el bajón",11900,"🎉","Para compartir entre amigos","Compartir"],[14,"Bebida alcohólica (ejemplo)","Bebidas alcohólicas",6500,"🍾","Ejemplo +18; venta sujeta a ley y verificación de edad","+18"]
-].map(a=>({id:a[0],name:a[1],cat:a[2],price:a[3],emoji:a[4],desc:a[5],tag:a[6]}));
-const cats=["Todo","Snacks y papas","Golosinas","Gaseosas y jugos","Energizantes","Bebidas alcohólicas","Combos para el bajón"];let selected="Todo",cart={};const money=n=>n.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0});
-function filters(){document.querySelector("#filters").innerHTML=cats.map(c=>`<button class="filter ${selected===c?"active":""}" data-cat="${c}">${c}</button>`).join("");document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{selected=b.dataset.cat;filters();render()})}
-function render(){let q=document.querySelector("#search").value.toLowerCase().trim(),list=products.filter(p=>(selected==="Todo"||p.cat===selected)&&(p.name+" "+p.cat+" "+p.desc).toLowerCase().includes(q));document.querySelector("#countProducts").textContent=list.length+" productos";document.querySelector("#products").innerHTML=list.length?list.map(p=>`<article class="product"><div class="art">${p.emoji}${p.tag?`<span class="tag">${p.tag}</span>`:""}</div><div class="details"><div class="cat">${p.cat}</div><h3>${p.name}</h3><p class="desc">${p.desc}</p><div class="buy"><span class="price">${money(p.price)}</span><button class="add" data-add="${p.id}">+</button></div></div></article>`).join(""):`<div class="empty">No encontramos productos con esa búsqueda.</div>`;document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{cart[b.dataset.add]=(cart[b.dataset.add]||0)+1;renderCart();toast()})}
+   const products = [
+  [1, "Absolut Blue 500 cc + 2 Red Bull", "Combos", null, "🍸", "Combo con Absolut Blue y dos Red Bull", ""],
+  [2, "Absolut sabor + 2 Monster", "Combos", null, "🍹", "Combo con Absolut sabor y dos Monster", ""],
+  [3, "Gin Gordon's + Tónica", "Combos", null, "🍸", "Gin Gordon's acompañado de tónica", ""],
+  [4, "Smirnoff + Cepita 1,5 L", "Combos", null, "🍹", "Incluye hielo de regalo", "Hielo de regalo"],
+  [5, "Smirnoff sabor + Sprite 2,25 L", "Combos", null, "🍹", "Incluye hielo de regalo", "Hielo de regalo"],
+  [6, "Vino blanco Dilema + 2 Speed", "Combos", null, "🍷", "Combo con vino blanco Dilema y dos Speed", ""],
+  [7, "Skyy + Sprite 2,25 L", "Combos", null, "🍸", "Incluye vaso y hielo", "Vaso + hielo"],
+  [8, "Skyy sabor + 3 Speed", "Combos", null, "🍹", "Combo con Skyy sabor y tres Speed", ""],
+  [9, "Hielo 1,5 kg", "Hielo", 2500, "🧊", "Bolsa de hielo de 1,5 kg", ""],
+  [10, "Hielo 5 kg", "Hielo", 5000, "🧊", "Bolsa de hielo de 5 kg", ""],
+  [11, "Hielo 10 kg", "Hielo", 10000, "🧊", "Bolsa de hielo de 10 kg", ""]
+].map(a => ({
+  id: a[0],
+  name: a[1],
+  cat: a[2],
+  price: a[3],
+  emoji: a[4],
+  desc: a[5],
+  tag: a[6]
+}));
+
+const cats = ["Todo", "Combos", "Hielo"];
+let selected = "Todo", cart = {};
+
+const money = n => n.toLocaleString("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  maximumFractionDigits: 0
+});
+
+function filters() {
+  document.querySelector("#filters").innerHTML = cats.map(c =>
+    `<button class="filter ${selected === c ? "active" : ""}" data-cat="${c}">${c}</button>`
+  ).join("");
+
+  document.querySelectorAll("[data-cat]").forEach(b => {
+    b.onclick = () => {
+      selected = b.dataset.cat;
+      filters();
+      render();
+    };
+  });
+}
+
+function render() {
+  let q = document.querySelector("#search").value.toLowerCase().trim();
+
+  let list = products.filter(p =>
+    (selected === "Todo" || p.cat === selected) &&
+    (p.name + " " + p.cat + " " + p.desc).toLowerCase().includes(q)
+  );
+
+  document.querySelector("#countProducts").textContent = list.length + " productos";
+
+  document.querySelector("#products").innerHTML = list.length
+    ? list.map(p => `
+      <article class="product">
+        <div class="art">
+          ${p.emoji}
+          ${p.tag ? `<span class="tag">${p.tag}</span>` : ""}
+        </div>
+        <div class="details">
+          <div class="cat">${p.cat}</div>
+          <h3>${p.name}</h3>
+          <p class="desc">${p.desc}</p>
+          <div class="buy">
+            <span class="price">
+              ${p.price === null ? "Consultar precio" : money(p.price)}
+            </span>
+            ${
+              p.price === null
+                ? `<span class="price">Consultar</span>`
+                : `<button class="add" data-add="${p.id}">+</button>`
+            }
+          </div>
+        </div>
+      </article>
+    `).join("")
+    : `<div class="empty">No encontramos productos con esa búsqueda.</div>`;
+
+  document.querySelectorAll("[data-add]").forEach(b => {
+    b.onclick = () => {
+      cart[b.dataset.add] = (cart[b.dataset.add] || 0) + 1;
+      renderCart();
+      toast();
+    };
+  });
+}
 function renderCart(){let es=Object.entries(cart),n=es.reduce((s,[,q])=>s+q,0),sub=es.reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);document.querySelector("#count").textContent=n;document.querySelector("#subtotal").textContent=money(sub);document.querySelector("#total").textContent=money(sub);document.querySelector("#items").innerHTML=es.length?es.map(([id,q])=>{let p=products.find(p=>p.id==id);return `<div class="item"><span style="font-size:29px">${p.emoji}</span><div><h4>${p.name}</h4><small>${money(p.price)} c/u</small><div class="qty"><button data-id="${id}" data-d="-1">−</button><b>${q}</b><button data-id="${id}" data-d="1">+</button></div></div><b>${money(p.price*q)}</b></div>`}).join(""):`<div class="empty">Tu carrito está vacío. 🍟</div>`;document.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{let id=b.dataset.id;cart[id]=(cart[id]||0)+Number(b.dataset.d);if(cart[id]<=0)delete cart[id];renderCart()});document.querySelector("#go").disabled=!n;document.querySelector("#go").style.opacity=n?1:.5}
 function toast(){let t=document.querySelector("#toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400)}
 const overlay=document.querySelector("#overlay"),modal=document.querySelector("#modal");document.querySelector("#open").onclick=()=>overlay.classList.add("show");document.querySelector("#close").onclick=()=>overlay.classList.remove("show");overlay.onclick=e=>{if(e.target===overlay)overlay.classList.remove("show")};document.querySelector("#go").onclick=()=>{if(Object.keys(cart).length){overlay.classList.remove("show");modal.classList.add("show")}};document.querySelector("#closemodal").onclick=()=>modal.classList.remove("show");modal.onclick=e=>{if(e.target===modal)modal.classList.remove("show")};document.querySelector("#search").oninput=render;
