@@ -336,10 +336,20 @@ function render() {
         `).join("")}
       </div>
 
-      <div class="totalrow">
-        <span>Total</span>
-        <span class="total">${money(o.total)}</span>
-      </div>
+  <div class="totalrow">
+  <span>Subtotal de productos</span>
+  <span>${money(o.subtotal)}</span>
+</div>
+
+<div class="totalrow">
+  <span>Costo de envío</span>
+  <span>${money(o.shipping)}</span>
+</div>
+
+<div class="totalrow">
+  <span><strong>Total final</strong></span>
+  <span class="total">${money(o.total)}</span>
+</div>
 
       <div class="details">
         <div>☎ ${o.phone}</div>
